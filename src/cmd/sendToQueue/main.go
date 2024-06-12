@@ -1,45 +1,53 @@
 package main
 
 import (
-	"ac-it/src/constants"
-	"ac-it/src/services"
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
+
+	"ac-it/src/constants"
+	"ac-it/src/services"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/sirupsen/logrus"
 )
 
-func Handler(ctx context.Context, sqsEvent events.SQSEvent) error {
+func Handler(ctx context.Context, sqsEvent events.SQSEvent, sqsClient *services.SqsClient, log *logrus.Logger) error {
+	message := sqsEvent.Records[0].Body
+
+	var messageBody map[string]interface{}
+	if err := json.Unmarshal([]byte(message), &messageBody); err != nil {
+		log.Error("Error unmarshalling message: ", err)
+		return err
+	}
+
+	if messageBody["prompt"] == nil {
+		err := errors.New("prompt not found in message")
+		log.Error(err.Error())
+		return err
+	}
+
+	err := sqsClient.PostToQueue(messageBody, "answerQueue")
+	if err != nil {
+		log.Error("Error posting to queue: ", err)
+		return err
+	}
+	log.Info("Message processed successfully")
+	return nil
+}
+
+func main() {
 	sess := session.Must(session.NewSession(&aws.Config{
 		Region: aws.String(constants.Region),
 	}))
 
 	sqsClient := services.NewSqsClient(sess)
+	log := services.GetLogger()
 
-	message := sqsEvent.Records[0].Body
-
-	var messageBody map[string]interface{}
-	if err := json.Unmarshal([]byte(message), &messageBody); err != nil {
-		fmt.Println("Error unmarshalling message: ", err)
-	}
-
-	if messageBody["prompt"] == nil {
-		return errors.New("prompt not found in message")
-	}
-
-	err := sqsClient.PostToQueue(messageBody, "answerQueue")
-	if err != nil {
-		fmt.Println("Error posting to queue: ", err)
-		return err
-	}
-	return nil
-}
-
-func main() {
-	lambda.Start(Handler)
+	lambda.Start(func(ctx context.Context, sqsEvent events.SQSEvent) error {
+		return Handler(ctx, sqsEvent, sqsClient, log)
+	})
 }
