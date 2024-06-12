@@ -1,0 +1,38 @@
+service: ac-it
+
+frameworkVersion: "3"
+configValidationMode: error
+
+plugins:
+  - serverless-go-plugin
+
+custom:
+  go:
+    supportedRuntimes: ["provided.al2"]
+    buildProvidedRuntimeAsBootstrap: true
+
+provider:
+  name: aws
+  runtime: provided.al2
+  architecture: arm64
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'eu-central-1'}
+  memorySize: 256
+  timeout: 60
+
+functions:
+  generateAnswer:
+    handler: ./src/cmd/sendToQueue/
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - AnswerQueue
+              - Arn
+
+resources:
+  Resources:
+    AnswerQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:service}-${self:provider.stage}-answer-queue
