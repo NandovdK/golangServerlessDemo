@@ -1,0 +1,17 @@
+sendToQueue:
+  handler: ./src/cmd/sendToQueue/main.go
+  events:
+    - sqs:
+        arn:
+          Fn::GetAtt:
+            - AnswerQueue
+            - Arn
+
+getResponse:
+  handler: ./src/cmd/getResponse/getResponse.go
+  events:
+    - sqs:
+        arn:
+          Fn::GetAtt:
+            - AnswerQueue
+            - Arn

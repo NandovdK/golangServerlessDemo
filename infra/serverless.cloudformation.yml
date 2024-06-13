@@ -1,0 +1,10 @@
+Resources:
+  AnswerQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${self:service}-${self:provider.stage}-answer-queue
+  
+  AnswerQueue2:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${self:service}-${self:provider.stage}-answer-queue2

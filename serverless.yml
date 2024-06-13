@@ -11,42 +11,6 @@ custom:
     supportedRuntimes: ["provided.al2023"]
     buildProvidedRuntimeAsBootstrap: true
 
-provider:
-  name: aws
-  runtime: provided.al2023
-  architecture: arm64
-  stage: ${opt:stage, 'dev'}
-  region: ${opt:region, 'eu-central-1'}
-  memorySize: 256
-  timeout: 60
-
-functions:
-  sendToQueue:
-    handler: ./src/cmd/sendToQueue/main.go
-    events:
-      - sqs:
-          arn:
-            Fn::GetAtt:
-              - AnswerQueue
-              - Arn
-  
-  getResponse:
-    handler: ./src/cmd/getResponse/main.go
-    events:
-      - sqs:
-          arn:
-            Fn::GetAtt:
-              - AnswerQueue
-              - Arn
-
-resources:
-  Resources:
-    AnswerQueue:
-      Type: AWS::SQS::Queue
-      Properties:
-        QueueName: ${self:service}-${self:provider.stage}-answer-queue
-    
-    AnswerQueue2:
-      Type: AWS::SQS::Queue
-      Properties:
-        QueueName: ${self:service}-${self:provider.stage}-answer-queue2
+provider: ${file(./infra/serverless.config.yml)}
+functions: ${file(./infra/serverless.functions.yml)}
+resources: ${file(./infra/serverless.cloudformation.yml)}

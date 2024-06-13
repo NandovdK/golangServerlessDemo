@@ -1,0 +1,7 @@
+name: aws
+runtime: provided.al2023
+architecture: arm64
+stage: ${opt:stage, 'dev'}
+region: ${opt:region, 'eu-central-1'}
+memorySize: 256
+timeout: 60
